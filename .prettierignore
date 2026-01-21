@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Common OS files
+.DS_Store
+
+# Optional: lockfiles are fine to keep formatted, but usually not needed
+# package-lock.json
