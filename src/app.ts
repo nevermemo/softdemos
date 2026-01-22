@@ -43,9 +43,10 @@ export class App {
   }
 
   private async loadAssetManifest(): Promise<AssetsManifest> {
-    const res = await fetch('/assets/manifest.json', { cache: 'no-store' });
+    // Use a relative URL so the app works when hosted under a sub-path (e.g. GitHub Pages).
+    const res = await fetch('assets/manifest.json', { cache: 'no-store' });
     if (!res.ok) {
-      throw new Error(`Failed to fetch /assets/manifest.json (${res.status})`);
+      throw new Error(`Failed to fetch assets/manifest.json (${res.status})`);
     }
     const manifest = await res.json();
     return manifest;
@@ -54,7 +55,8 @@ export class App {
   private async loadAssetsFromManifest(): Promise<void> {
     const manifest = await this.loadAssetManifest();
     await Assets.init({
-      basePath: '/assets/',
+      // Relative basePath is compatible with GitHub Pages (/<repo>/assets/...).
+      basePath: 'assets/',
       manifest
     });
 
