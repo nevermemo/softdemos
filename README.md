@@ -5,7 +5,7 @@ This repo contains a small PixiJS (v8) playground with three scenes, each implem
 ## Quick links
 
 - [**Demo showcase**](https://nevermemo.github.io/softdemos/)
-- [**Local dev server**](`http://localhost:8080`)
+- [**Local dev server**](http://localhost:8080)
 
 ## Assignment checklist (what’s implemented)
 
