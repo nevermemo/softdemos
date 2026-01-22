@@ -24,7 +24,7 @@ interface ConversationData {
 }
 
 const messageMargin = 10;
-const backgroundColor = 0xaaaaaa;
+const backgroundColor = 0x0d0b14;
 const maxWidth = 700;
 
 const conversationUrl = 'https://private-624120-softgamesassignment.apiary-mock.com/v2/magicwords';

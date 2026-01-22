@@ -1,25 +1,29 @@
-import { Container, Sprite, Texture, Text, Graphics, TextStyleOptions, Assets } from 'pixi.js';
+import { Container, Sprite, Texture, Text, Graphics, TextStyleOptions } from 'pixi.js';
 
 import { EmojiText } from './emoji-text';
 
 const config = {};
 
 const minBoxWidth = 350;
-const borderThickness = 3;
-const borderColor = 0x00ffff;
+const borderThickness = 2;
+const borderColor = 0x2f2a44;
 const backgroundCornerRadius = 16;
 const backgroundColors = {
-  right: 0x00ff00,
-  left: 0x00aa00
+  left: 0x1f1b2e,
+  right: 0x3b1d5a
 };
-const avatarBgColor = 0x888888;
+const avatarBgColor = 0x141125;
 const avatarSize = 80;
-const nameBgColor = 0xffff00;
+const nameBgColors = {
+  left: 0x141125,
+  right: 0x2a143f
+};
 const nameBgHeight = 20;
 const messagePadding = 16;
-const defaultTextStyle: TextStyleOptions = {
+const baseTextStyle: TextStyleOptions = {
   fontFamily: 'Pixeloid',
-  fontSize: 18
+  fontSize: 18,
+  fill: 0xf2efff
 };
 
 export class MessageBox extends Container {
@@ -44,8 +48,8 @@ export class MessageBox extends Container {
     super();
 
     this._avatarSprite = new Sprite(avatarTexture);
-    this._nameText = new Text({ text: person, style: defaultTextStyle });
-    this._messageText = new EmojiText({ text: message, style: defaultTextStyle }, emojis);
+    this._nameText = new Text({ text: person, style: baseTextStyle });
+    this._messageText = new EmojiText({ text: message, style: baseTextStyle }, emojis);
 
     this._avatarBg
       .setFillStyle({ color: avatarBgColor })
@@ -60,7 +64,7 @@ export class MessageBox extends Container {
     this._nameBg
       .setFillStyle({ color: avatarBgColor })
       .rect(0, 0, avatarSize, nameBgHeight)
-      .fill({ color: nameBgColor })
+      .fill({ color: nameBgColors[this._side] })
       .stroke({
         alignment: 0,
         cap: 'square',

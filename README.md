@@ -108,6 +108,7 @@ Each task is implemented as a separate scene. Select a scene from the in-game me
 	- **Text** is rendered with Pixi `Text` objects
 	- **Emoji** tokens are rendered as `Sprite`s sized relative to the font size
 - Text and emoji display objects are pooled for reuse to reduce allocations during re-layout.
+- A white texture for missing avatars and broken image texture for missing emojis is used.
 
 **Notes**
 
