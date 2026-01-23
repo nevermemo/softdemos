@@ -1,4 +1,4 @@
-import { Container, Ticker } from 'pixi.js';
+import { Container, Ticker, DestroyOptions } from 'pixi.js';
 
 export interface SceneLike extends Container {
   readonly title: string;
@@ -9,5 +9,5 @@ export interface SceneLike extends Container {
   toggle(visible: boolean, autoStartOrReset?: boolean): void;
   play(): void;
   stop(): void;
-  destroy(): void;
+  destroy(options?: DestroyOptions): void;
 }

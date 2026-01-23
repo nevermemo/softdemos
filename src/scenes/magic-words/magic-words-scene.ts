@@ -1,36 +1,20 @@
-import { Assets, UnresolvedAsset, Texture } from 'pixi.js';
+import { Assets, Circle, Text, Texture, UnresolvedAsset } from 'pixi.js';
 import { ScrollBox, ScrollBoxOptions } from '@pixi/ui';
 
 import { AbstractScene } from '../abstract-scene';
 import { MessageBox } from './components/message-box';
+import { ConversationData, isConversationData } from './api-utils';
 
-interface MessageInfo {
-  name: string;
-  text: string;
-}
-interface EmojiSource {
-  name: string;
-  url: string;
-}
-interface AvatarInfo {
-  name: string;
-  url: string;
-  position: 'left' | 'right';
-}
-interface ConversationData {
-  dialogue: MessageInfo[];
-  emojies: EmojiSource[];
-  avatars: AvatarInfo[];
-}
-
-const messageMargin = 10;
-const backgroundColor = 0x0d0b14;
-const maxWidth = 700;
+type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 
 const conversationUrl = 'https://private-624120-softgamesassignment.apiary-mock.com/v2/magicwords';
 const bundleName = 'magic-words';
 const emojiAliasPrefix = 'emoji-';
 const avatarAliasPrefix = 'avatar-';
+
+const messageMargin = 10;
+const backgroundColor = 0x0d0b14;
+const maxWidth = 700;
 
 export class MagicWordsScene extends AbstractScene {
   label = 'magic-words';
@@ -43,12 +27,36 @@ export class MagicWordsScene extends AbstractScene {
   private readonly _emojis: Map<string, Texture> = new Map();
   private readonly _avatars: Map<string, { texture: Texture; position: 'left' | 'right' }> = new Map();
 
+  private _loadState: LoadState = 'idle';
+  private _abortController: AbortController | undefined;
+  private readonly _statusText: Text;
+
   private readonly _scrollBoxOptions: ScrollBoxOptions;
   private readonly _scrollBox: ScrollBox;
   private readonly _messageBoxes: MessageBox[] = [];
 
   constructor() {
     super();
+
+    this._statusText = new Text({
+      text: 'Loading…',
+      style: {
+        fontFamily: 'Pixeloid',
+        fontSize: 22,
+        fill: 0xf2efff,
+        align: 'center'
+      }
+    });
+    this._statusText.anchor.set(0.5);
+    this._statusText.visible = true;
+    this._statusText.eventMode = 'static';
+    this._statusText.cursor = 'pointer';
+    this._statusText.hitArea = new Circle(0, 0, Infinity);
+    this._statusText.on('pointertap', () => {
+      if (this._loadState === 'error') {
+        this.startLoading();
+      }
+    });
 
     this._scrollBoxOptions = {
       background: backgroundColor,
@@ -62,13 +70,14 @@ export class MagicWordsScene extends AbstractScene {
       disableProximityCheck: true
     };
     this._scrollBox = new ScrollBox(this._scrollBoxOptions);
-    this.addChild(this._scrollBox);
+    this.addChild(this._statusText);
 
-    this.loadAssetsFromConversation().then(conversation => this.onAssetsLoaded(conversation));
+    // setTimeout(() => this.startLoading(), 5000); // A useful delay for testing loading
+    this.startLoading();
   }
 
   reset(): void {
-    // Nothing to do
+    this._scrollBox.scrollTop();
   }
 
   resize(width: number, height: number): void {
@@ -79,6 +88,9 @@ export class MagicWordsScene extends AbstractScene {
     this._lastHeight = height;
 
     this.position.set((width - targetWidth) / 2, 0);
+
+    this._statusText.position.set(targetWidth / 2, targetHeight / 2);
+
     this._messageBoxes.forEach(mBox => {
       mBox.setWidth(targetWidth - 2 * messageMargin);
     });
@@ -106,21 +118,28 @@ export class MagicWordsScene extends AbstractScene {
 
     this._scrollBox.addItems(this._messageBoxes);
 
+    this._statusText.visible = false;
+    this._loadState = 'ready';
+
+    this.addChild(this._scrollBox);
     this.resize(this._lastWidth, this._lastHeight);
   }
 
-  private async loadConversationData(): Promise<ConversationData> {
-    const res = await fetch(conversationUrl, { cache: 'no-store' });
+  private async loadConversationData(signal: AbortSignal): Promise<ConversationData> {
+    const res = await fetch(conversationUrl, { cache: 'no-store', signal });
     if (!res.ok) {
       throw new Error(`Failed to load ${conversationUrl} (${res.status})`);
     }
-    const conversation = await res.json();
+    const conversation: unknown = await res.json();
+    if (!isConversationData(conversation)) {
+      throw new Error('Invalid API response shape for Magic Words conversation');
+    }
     return conversation;
   }
 
-  private async loadAssetsFromConversation(): Promise<ConversationData> {
-    const conversation = await this.loadConversationData();
-    const { dialogue, emojies, avatars } = conversation;
+  private async loadAssetsFromConversation(signal: AbortSignal): Promise<ConversationData> {
+    const conversation = await this.loadConversationData(signal);
+    const { emojies, avatars } = conversation;
 
     const bundleAssets: UnresolvedAsset[] = [];
     bundleAssets.push(
@@ -169,5 +188,46 @@ export class MagicWordsScene extends AbstractScene {
     });
 
     this.buildScene();
+  }
+
+  private startLoading(): void {
+    if (this._loadState === 'loading' || this._loadState === 'ready') {
+      return;
+    }
+
+    this._loadState = 'loading';
+    this._statusText.text = 'Loading…';
+    this._statusText.visible = true;
+
+    if(this._abortController) {
+      this._abortController.abort();
+    }
+    this._abortController = new AbortController();
+
+    this.loadAssetsFromConversation(this._abortController.signal)
+      .then(conversation => this.onAssetsLoaded(conversation))
+      .catch(err => this.onLoadError(err));
+  }
+
+  private onLoadError(err: unknown): void {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      return;
+    }
+
+    console.error(err);
+
+    this._loadState = 'error';
+    this._statusText.text = 'Failed to load.\nTap to retry.';
+    this._statusText.visible = true;
+  }
+
+  protected override onDestroy(): void {
+    if(this._abortController) {
+      this._abortController.abort();
+    }
+    this._abortController = undefined;
+    this._emojis.forEach(texture => texture.destroy(true));
+    this._avatars.forEach(avatar => avatar.texture.destroy(true));
+    Assets.unloadBundle(bundleName);
   }
 }

@@ -4,6 +4,8 @@ import Stats from 'stats.js';
 import { SceneLike } from './types';
 import { SceneSelectorUI } from './scene-selector-ui';
 
+const bundleName = 'demos';
+
 export class App {
   private readonly _pixiApp: Application;
 
@@ -42,6 +44,22 @@ export class App {
     }
   }
 
+  removeScene(scene: SceneLike): boolean {
+    const index = this._scenes.indexOf(scene);
+    if (index < 0) {
+      return false;
+    }
+
+    this._scenes.splice(index, 1);
+    scene.destroy();
+
+    if (!this._scenes.some(s => s.visible)) {
+      this._introText.visible = true;
+    }
+
+    return true;
+  }
+
   private async loadAssetManifest(): Promise<AssetsManifest> {
     // Use a relative URL so the app works when hosted under a sub-path (e.g. GitHub Pages).
     const res = await fetch('assets/manifest.json', { cache: 'no-store' });
@@ -60,7 +78,7 @@ export class App {
       manifest
     });
 
-    await Assets.loadBundle('demos');
+    await Assets.loadBundle(bundleName);
   }
 
   async init(sceneClasses: Array<new () => SceneLike> = []): Promise<void> {
@@ -89,7 +107,18 @@ export class App {
 
         document.addEventListener('click', () => this.requestFullScreen());
       })
-      .catch(err => console.log(err));
+      .catch(err => console.error(err));
+  }
+
+  destroy(): void {
+    while (this._scenes.length > 0) {
+      this.removeScene(this._scenes[0]);
+    }
+
+    this._sceneSelector.destroy({ children: true });
+
+    Assets.unloadBundle(bundleName);
+    this._pixiApp.destroy(true, true);
   }
 
   private resize(width: number, height: number): void {
@@ -110,6 +139,10 @@ export class App {
   }
 
   private onSceneButtonClicked(targetScene: SceneLike): void {
+    if (!this._scenes.includes(targetScene)) {
+      return;
+    }
+
     let activeScene: SceneLike | undefined;
 
     for (let scene of this._scenes) {

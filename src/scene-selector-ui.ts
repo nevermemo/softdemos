@@ -10,6 +10,7 @@ const maxHeightRatio = 0.3;
 export class SceneSelectorUI extends Container {
   private readonly _buttonsContainer: Container = new Container({ label: 'buttons' });
   private readonly _buttons: Container[] = [];
+  private readonly _sceneToButton: Map<SceneLike, Container> = new Map();
 
   constructor() {
     super({ label: 'scene-selector' });
@@ -26,7 +27,8 @@ export class SceneSelectorUI extends Container {
     this.scale.set(Math.min(this.scale.x, this.scale.y));
     this.position.set(width / 2, height - bottomPadding);
 
-    return height - this.height;
+    // Return the y coordinate of the top edge of the menu, i.e. the available game height.
+    return height - this.height - bottomPadding;
   }
 
   addButton(scene: SceneLike): void {
@@ -34,9 +36,11 @@ export class SceneSelectorUI extends Container {
 
     const buttonContainer = new Container({ label: `${title.toLocaleLowerCase().replace(' ', '-')}-button` });
     this._buttons.push(buttonContainer);
+    this._sceneToButton.set(scene, buttonContainer);
 
     const buttonSprite = Sprite.from('button');
-    buttonSprite.interactive = true;
+    buttonSprite.eventMode = 'static';
+    buttonSprite.cursor = 'pointer';
     buttonContainer.addChild(buttonSprite);
 
     const buttonText = new Text({
@@ -62,6 +66,26 @@ export class SceneSelectorUI extends Container {
     buttonSprite.on('pointertap', () => {
       this.emit('sceneselected', scene);
     });
+  }
+
+  removeButton(scene: SceneLike): boolean {
+    const button = this._sceneToButton.get(scene);
+    if (!button) {
+      return false;
+    }
+
+    this._sceneToButton.delete(scene);
+
+    const index = this._buttons.indexOf(button);
+    if (index >= 0) {
+      this._buttons.splice(index, 1);
+    }
+
+    button.removeFromParent();
+    button.destroy({ children: true });
+    this.rearrangeButtons();
+
+    return true;
   }
 
   rearrangeButtons(): void {

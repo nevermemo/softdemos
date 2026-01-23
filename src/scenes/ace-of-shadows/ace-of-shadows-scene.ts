@@ -2,6 +2,7 @@ import { Container, Sprite, Texture, Matrix, Ticker } from 'pixi.js';
 import { Tween, Easing, Group } from '@tweenjs/tween.js';
 
 import { AbstractScene } from '../abstract-scene';
+import { generateLinearLerp, generateParabolicLerp } from './utils';
 
 type AnimEasings = {
   x: (t: number) => number;
@@ -25,22 +26,6 @@ const cardAnimDuration = 2000;
 const cardAnimRepeat = 1000;
 const cardPeakHeight = 100;
 const cardExtraFlips = -2;
-
-const generateLinearLerp: (xStart: number, xEnd: number) => (t: number) => number = (xStart: number, xEnd: number) => {
-  const delta = xEnd - xStart;
-  return (t: number) => xStart + t * delta;
-};
-
-const generateParabolicLerp: (yStart: number, yEnd: number, yPeak: number) => (t: number) => number = (
-  yStart: number,
-  yEnd: number,
-  yPeak: number
-) => {
-  const s = Math.sqrt((yStart - yPeak) * (yEnd - yPeak));
-  const b = 2 * (yPeak - yStart - s);
-  const a = yStart + yEnd - 2 * yPeak + 2 * s;
-  return (t: number) => a * t * t + b * t + yStart;
-};
 
 export class AceOfShadowsScene extends AbstractScene {
   label = 'ace-of-shadows';

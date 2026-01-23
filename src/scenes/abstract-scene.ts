@@ -1,4 +1,4 @@
-import { Container, Ticker } from 'pixi.js';
+import { Container, Ticker, DestroyOptions } from 'pixi.js';
 
 import { SceneLike } from '../types';
 
@@ -43,5 +43,26 @@ export abstract class AbstractScene extends Container implements SceneLike {
 
   get isPlaying(): boolean {
     return this._isPlaying;
+  }
+
+  protected onDestroy(): void {
+    // Optional per-scene cleanup hook.
+  }
+
+  override destroy(
+    options: DestroyOptions = {
+      children: true,
+      texture: true,
+      textureSource: false,
+      style: true,
+      context: true
+    }
+  ): void {
+    if (this.destroyed) {
+      return;
+    }
+    this.toggle(false);
+    this.onDestroy();
+    super.destroy(options);
   }
 }

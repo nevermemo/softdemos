@@ -1,4 +1,4 @@
-import { Container, CanvasTextMetrics, Text, TextOptions, TextStyle, Sprite, Texture } from 'pixi.js';
+import { Container, CanvasTextMetrics, Text, TextOptions, TextStyle, Sprite, Texture, DestroyOptions } from 'pixi.js';
 
 interface EmojiTextSegment {
   type: 'text' | 'emoji';
@@ -52,6 +52,13 @@ export class EmojiText extends Container {
     }
     this._wordWrapWidth = value;
     this.redrawLayout();
+  }
+
+  override destroy(options?: DestroyOptions): void {
+    this.clearObjects();
+    this._textPool.forEach(text => text.destroy(true));
+    this._emojiSpritePools.forEach(sprites => sprites.forEach(sprite => sprite.destroy(false)))
+    super.destroy(options);
   }
 
   private redrawLayout(): void {

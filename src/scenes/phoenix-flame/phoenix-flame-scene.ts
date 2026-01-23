@@ -212,4 +212,11 @@ export class PhoenixFlameScene extends AbstractScene {
 
     return true;
   }
+
+  protected override onDestroy(): void {
+    this._blazeEmitter.config.data.shared.textures.forEach(texture => texture.destroy(false));
+    this._trailEmitter.config.data.shared.textureSequences.forEach(sequence => {
+      sequence.forEach(({ texture }) => texture.destroy(false));
+    });
+  }
 }

@@ -1,4 +1,4 @@
-import { Container, Sprite, Texture, Ticker } from 'pixi.js';
+import { Container, DestroyOptions, Sprite, Texture, Ticker } from 'pixi.js';
 
 interface LastAutoSpawnInfo {
   amount: number;
@@ -123,6 +123,11 @@ export class ParticleEmitter<T extends {}> extends Container {
     this._config.spawn(particle, this._config.data, this, undefined);
 
     return true;
+  }
+
+  override destroy(options?: DestroyOptions): void {
+    this._particlePool.forEach(particle => particle.destroy(false));
+    super.destroy(options);
   }
 
   get config(): ParticleSystemConfig<T> {
